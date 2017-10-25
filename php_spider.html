@@ -1,0 +1,256 @@
+<?php
+$k_get=$_GET["k"];
+
+if ($k_get=="") $k_get="米森 蔓越莓麥片"; 
+
+#公司資料
+$company_data=array();
+$company_data[1]["name"]="PCHOME";
+$company_data[1]["url"]="http://ecshweb.pchome.com.tw/search/v3.3/all/results?"; 
+
+$company_data[2]["name"]="MOMO";
+$company_data[2]["url"]="";
+
+$company_data[3]["name"]="博客來";
+$company_data[3]["url"]="http://search.books.com.tw/search/query/key/"; 
+
+$company_data[4]["name"]="YAHOO 購物中心";
+$company_data[4]["url"]="https://tw.search.buy.yahoo.com/search/shopping/product?";
+
+
+function http_requset($url_code, $keyword, $_debug, $http_sockopen_timeout, $http_curlopt_timeout) 
+{   
+	global $company_data;
+
+	$keyword=urlencode($keyword);
+	if ($_debug) {
+		$keyword=urlencode("米森 蔓越莓麥片");
+
+	}
+	
+	if ($http_sockopen_timeout == "") $http_sockopen_timeout=30; 
+	if ($http_curlopt_timeout == "") $http_curlopt_timeout=60; 
+
+
+	if ($url_code==1) {
+		$get_str="q=".$keyword."&page=1&sort=rnk/dc";
+
+	} elseif ($url_code==2) {
+
+	} elseif ($url_code==3) {
+		$get_str=$keyword."/cat/all";
+		
+	} elseif ($url_code==4) {
+		$get_str="p=".$keyword."&qt=product&cid=0&clv=0&cid_path=";
+		
+	} else {
+		$res_msg= "url_code is error\n";
+		return $res_msg;
+	}   
+	$http_url=$company_data[$url_code]["url"].$get_str;
+	
+	$HTTP_USER_AGENT="Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36";
+	
+	$header[] = "Cache-Control: no-cache";
+	$header[] = "Pragma: no-cache";
+
+	if ($_debug) echo "http_url: ".$http_url."\n";
+
+	$curl_rs=curl_init();	
+	if (!$curl_rs) { return "connect failed\n"; }
+	curl_setopt($curl_rs, CURLOPT_URL, $http_url);
+	curl_setopt($curl_rs, CURLOPT_USERAGENT, $HTTP_USER_AGENT);	
+	curl_setopt($curl_rs, CURLOPT_RETURNTRANSFER, true);	
+	curl_setopt($curl_rs, CURLOPT_HTTPHEADER, $header);	   
+	curl_setopt($curl_rs, CURLOPT_TIMEOUT, $http_curlopt_timeout);
+	curl_setopt($curl_rs,CURLOPT_SSL_VERIFYHOST,0);
+	curl_setopt($curl_rs,CURLOPT_SSL_VERIFYPEER,0);
+
+
+	$curl_result=curl_exec($curl_rs);
+	curl_close($curl_rs);
+
+	if ($url_code==1) {
+		$pchome_arr=array();
+		$curl_result_json=json_decode($curl_result,1);   
+		if ($curl_result_json["totalPage"] < 1) {
+
+		} else {
+			$count=0;
+			foreach ( $curl_result_json["prods"] as $k => $v ) {
+				$pchome_arr[$k]["id"]=$v["Id"];
+				$pchome_arr[$k]["pic"]=$v["picS"];
+				$pchome_arr[$k]["name"]=$v["name"];
+				$pchome_arr[$k]["price"]=$v["price"];
+				$pchome_arr[$k]["describe"]=$v["describe"];
+				$count++;				
+			}
+		}     
+
+		$out=$pchome_arr;
+		
+	} elseif ($url_code==2) {
+		//MOMO
+	} elseif ($url_code==3) {
+		include_once 'simple_html_dom.php';
+		$books_arr=array();
+		$html = str_get_html($curl_result);
+
+		#名稱&連結
+		$c=0;
+		foreach ( $html->find('.item h3 a') as $element4) {
+
+			$books_arr[$c]["name"]=trim($element4->text());
+			$books_arr[$c]["link"]=$element4->href;
+
+			$c++;
+		}
+		#價錢
+		$c=0;
+		foreach ( $html->find('.price strong') as $element1) {
+
+			if (strpos ($element1->text(), "元")) {        
+				$books_arr[$c]["price"]=$element1->text();
+				$c++;
+			}    
+		}
+		$out=$books_arr;
+
+	} elseif ($url_code==4) {
+		include_once 'simple_html_dom.php';
+		//yahoo 
+		$yahoo_arr=array();
+		$html123 = str_get_html($curl_result);
+
+		#價錢
+		$c=0;
+		foreach ( $html123->find('.srp-pdprice') as $e_pdprice) {
+
+			$yahoo_arr[$c]["price"]=trim($e_pdprice->plaintext);    
+			$c++;
+		}
+		#名稱
+		$c=0;
+		foreach ( $html123->find('.srp-pdtitle a') as $e_pdtitle) {
+
+			$yahoo_arr[$c]["name"]=trim($e_pdtitle->text());
+			$yahoo_arr[$c]["link"]=trim($e_pdtitle->href);
+
+			$c++;
+		}
+		$out=$yahoo_arr;
+	}else{
+
+	}
+	//print_r($out);
+	return $out;
+}
+
+$word=$k_get;
+$ret_pchome = http_requset(1,$word, 0, "", "");//PCHOME
+
+$ret_books = http_requset(3, $word, 0, "", "");//BOOKS
+
+$ret_yahoo = http_requset(4, $word, 0, "", "");//YAHOO
+
+?>
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>repl.it</title>
+		<!-- Bootstrap -->
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+		<link href="index.css" rel="stylesheet" type="text/css" />
+	</head>
+	<body>
+		
+		<div class="container">
+			
+			<h1><?=$word ?></h1>
+			<div style="width:30%">
+				<h2>PCHOME</h2>
+
+				<table class="table table-hover" >
+					<thead>
+						<tr>
+							<th>商品名稱</th>
+							<th>價格</th>
+
+						</tr>
+					</thead>
+					<tbody>
+					<?php
+						foreach ($ret_pchome as $v) {
+							echo "<tr>";
+							echo "<td>".$v['name']."</td>";
+							echo "<td>".$v['price']."</td>";							
+							echo "</tr>";
+						}
+					?>
+						
+					</tbody>
+				</table>
+			</div>
+			
+			<div style="width:30%">
+				<h2>博客來</h2>
+
+				<table class="table table-hover" >
+					<thead>
+						<tr>
+							<th>商品名稱</th>
+							<th>價格</th>
+
+						</tr>
+					</thead>
+					<tbody>
+					<?php
+						foreach ($ret_books as $v) {
+							echo "<tr>";
+							echo "<td>".$v['name']."</td>";
+							echo "<td>".$v['price']."</td>";							
+							echo "</tr>";
+						}
+					?>
+						
+					</tbody>
+				</table>
+			</div>
+			
+			<div style="width:30%">
+				<h2>YAHOO</h2>
+
+				<table class="table table-hover" >
+					<thead>
+						<tr>
+							<th>商品名稱</th>
+							<th>價格</th>
+
+						</tr>
+					</thead>
+					<tbody>
+					<?php
+						foreach ($ret_yahoo as $v) {
+							echo "<tr>";
+							echo "<td>".$v['name']."</td>";
+							echo "<td>".$v['price']."</td>";							
+							echo "</tr>";
+						}
+					?>
+						
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+		<!-- Include all compiled plugins (below), or include individual files as needed -->
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<!--<script src="index.js"></script>-->
+
+	</body>
+
+</html>
