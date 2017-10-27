@@ -1,0 +1,148 @@
+<?php
+$k_get=$_GET["k"];
+
+if ($k_get=="") $k_get="米森 蔓越莓麥片"; 
+
+$include_path = dirname(__FILE__); //現在所在之資料夾路徑
+include_once $include_path."/config.php"; //$company_data;
+include_once $include_path."/fun.php";
+
+$word=$k_get;
+
+$ret_pchome = get_pchome_search($word); //PCHOME
+//$ret_pchome = http_requset(1,$word, 0, "", "");//PCHOME
+$ret_momo = get_momo_search($word); //MOMO
+//$ret_momo = http_requset(2,$word, 0, "", "");//momo
+$ret_books = get_books_search($word); 
+//$ret_books = http_requset(3, $word, 0, "", "");//BOOKS
+$ret_yahoo = get_yahoo_search($word); 
+//$ret_yahoo = http_requset(4, $word, 0, "", "");//YAHOO
+
+
+//exit;
+?>
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>EC Crawler</title>
+		<!-- Bootstrap -->
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+		<link href="index.css" rel="stylesheet" type="text/css" />
+	</head>
+	<body>
+		
+		<div class="container">
+			
+			<h1><?=$word ?></h1>
+			<div style="width:30%">
+				<h2>PCHOME</h2>
+
+				<table class="table table-hover" >
+					<thead>
+						<tr>
+							<th>商品名稱</th>
+							<th>價格</th>
+
+						</tr>
+					</thead>
+					<tbody>
+					<?php
+						foreach ($ret_pchome as $v) {
+							echo "<tr>";
+							echo "<td>".$v['name']."</td>";
+							echo "<td>".$v['price']."</td>";							
+							echo "</tr>";
+						}
+					?>
+						
+					</tbody>
+				</table>
+			</div>
+			
+			<div style="width:30%"><!-MOMO ->
+				<h2>MOMO</h2>
+
+				<table class="table table-hover" >
+					<thead>
+						<tr>
+							<th>商品名稱</th>
+							<th>價格</th>
+
+						</tr>
+					</thead>
+					<tbody>
+					<?php
+						foreach ($ret_momo as $v) {
+							echo "<tr>";
+							echo "<td>".$v['name']."</td>";
+							echo "<td>".$v['price']."</td>";							
+							echo "</tr>";
+						}
+					?>
+						
+					</tbody>
+				</table>
+			</div>
+			
+			<div style="width:30%">
+				<h2>博客來</h2>
+
+				<table class="table table-hover" >
+					<thead>
+						<tr>
+							<th>商品名稱</th>
+							<th>價格</th>
+
+						</tr>
+					</thead>
+					<tbody>
+					<?php
+						foreach ($ret_books as $v) {
+							echo "<tr>";
+							echo "<td>".$v['name']."</td>";
+							echo "<td>".$v['price']."</td>";							
+							echo "</tr>";
+						}
+					?>
+						
+					</tbody>
+				</table>
+			</div>
+			
+			<div style="width:30%">
+				<h2>YAHOO</h2>
+
+				<table class="table table-hover" >
+					<thead>
+						<tr>
+							<th>商品名稱</th>
+							<th>價格</th>
+
+						</tr>
+					</thead>
+					<tbody>
+					<?php
+						foreach ($ret_yahoo as $v) {
+							echo "<tr>";
+							echo "<td>".$v['name']."</td>";
+							echo "<td>".$v['price']."</td>";							
+							echo "</tr>";
+						}
+					?>
+						
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+		<!-- Include all compiled plugins (below), or include individual files as needed -->
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<!--<script src="index.js"></script>-->
+
+	</body>
+
+</html>
